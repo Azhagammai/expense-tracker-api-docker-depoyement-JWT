@@ -383,6 +383,117 @@ JWT_SECRET_KEY=your-very-secure-secret-key
 FLASK_ENV=production
 ```
 
+
+
+# snapshot for your view
+---
+
+# Run the API
+```python simple_working_api.py```
+```Register```
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/c5f615c4-3107-4888-b071-5035b6b51428" />
+
+
+``` Set the Postman Header```
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/9bbdff11-7762-4b9c-867e-a650452dd6ac" />
+
+
+
+```Login```
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/30c104b6-356a-448a-b3e1-912833afa3fe" />
+
+
+```MongoDBConnection```
+<img width="1920" height="1080" alt="Screenshot (411)" src="https://github.com/user-attachments/assets/715b137e-1065-45cf-84f6-725a9ef38c08" />
+
+## Categories
+```Groceries```
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/8a7aa056-920b-4f01-bf15-0444b4555ff1" />
+
+```Loded data innto MongoDB```
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/409e514b-880a-4a1a-a14d-f39593433cfb" />
+
+```Leisure```
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/29d52a47-1b6a-41b7-8bcd-9805e6d96314" />
+
+```Electronics```
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/313c3ce5-9308-43b8-9ca2-a8fa43c9ee0b" />
+
+```Utilities```
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/a03a5ed6-3892-4a53-94b8-202440d5a2ba" />
+
+```Clothing```
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/ff3b8857-6b73-4715-84e3-211aff0d64eb" />
+
+```Heath```
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/b1cebe10-526c-4c4a-acd8-0ae25c16b789" />
+
+```Miscellaneous```
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/d93af8ed-4bac-45e2-9f2c-8996b2600ace" />
+
+# Get the categories list
+```All the categories listed```
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/58e2009f-6a78-4a82-8c1c-5da7211a6488" />
+
+# Set Monthly Income
+
+```IntialAmount```
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/5858bff8-361b-4bb4-8c4a-f4ccf4adb353" />
+
+# Added the Expenses
+
+```Object Id -> Category Id```
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/88e0661d-90e8-4319-b134-ad14fe736616" />
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/c788a466-2779-4c51-9b32-b7104c09a98b" />
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/a40063c2-a282-4594-9587-2c436f1bff97" />
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/93de3cfb-4e05-43e0-9f92-da8a40026e29" />
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/6fee2b24-784e-4af1-9a58-f4e3e7cdc750" />
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/d64f2fb6-723e-4618-88ec-e274c754a6c4" />
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/5d5f18c6-bfd8-44bc-bb66-b5bb085761ae" />
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/26b6f8fb-b952-491f-8751-c1293f8b79f7" />
+
+
+# Expense Filtering
+
+```Past_week_Filtering```
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/83aaad58-c074-485c-8156-9461a62fdf1b" />
+
+```Last_Month_Filtering```
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/a4ae9dc4-83c9-44a4-8c92-4c3d6e6a19a4" />
+
+```Last_three_month_Filtering```
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/f65fb371-1d46-4377-9a22-c196553d11fd" />
+
+```Custom Date Range Filter```
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/5e4cf3ae-5572-4fe5-a2c6-05d37a3f0367" />
+
+```Category Filter (Groceries)```
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/5319d90d-1808-460f-8611-d830c7f6c0c9" />
+
+
+# Update Expense
+
+```Grocery```
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/c389987d-f4de-4725-8b1a-097ce5b316a8" />
+
+# Calculate Savings & Balance
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/fba54200-f19f-4cdd-be48-e003fe9c789b" />
+
+# Delete Expense
+```Grocery_Lastly_update```
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/39e5a26a-c0d4-4832-b052-c9857e8fcc1f" />
+
+# Check Final Saving
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/083a3572-6b8b-4ce4-9c12-32c50db4855d" />
+
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -391,14 +502,3 @@ FLASK_ENV=production
 4. Add tests if applicable
 5. Submit a pull request
 
-## 📄 License
-
-This project is licensed under the MIT License.
-
-## 📞 Support
-
-For support or questions, please open an issue in the repository or contact the development team.
-
----
-
-**Happy expense tracking! 💰📊**
