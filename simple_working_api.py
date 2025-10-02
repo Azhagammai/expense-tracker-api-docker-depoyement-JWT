@@ -33,10 +33,27 @@ EXPENSE_CATEGORIES = ['Groceries', 'Leisure', 'Electronics', 'Utilities', 'Cloth
 @app.route('/')
 def home():
     return jsonify({
-        'message': 'Simple Working API - Fixed JWT Issues',
+        'message': 'Enhanced Expense Tracker API with Income & Savings',
         'status': 'success',
-        'version': '1.0.0',
-        'database': 'MongoDB Connected'
+        'version': '2.0.0',
+        'database': 'MongoDB Connected',
+        'features': [
+            'User Authentication with JWT',
+            'Complete Expense CRUD (Create, Read, Update, Delete)',
+            'Global Category Amount Tracking',
+            'Monthly Income Tracking',
+            'Accurate Balance & Savings Calculation',
+            'Advanced Expense Filtering (Past Week, Last Month, Last 3 Months, Custom Dates)',
+            'Category-wise Expense Analysis'
+        ],
+        'endpoints': {
+            'auth': ['/api/users/register', '/api/users/login'],
+            'categories': ['GET/POST /api/categories'],
+            'expenses': ['GET/POST /api/expenses', 'PUT/DELETE /api/expenses/<id>'],
+            'income': ['GET/POST /api/income'],
+            'savings': ['GET /api/savings'],
+            'filters': ['?filter=past_week|last_month|last_3_months|custom&start_date=&end_date=']
+        }
     })
 
 @app.route('/health')
@@ -167,6 +184,11 @@ def get_categories():
             cat['id'] = str(cat['_id'])
             del cat['_id']
             cat['created_at'] = cat['created_at'].isoformat() if 'created_at' in cat else None
+            # Ensure total_amount and expense_count exist for older categories
+            if 'total_amount' not in cat:
+                cat['total_amount'] = 0.0
+            if 'expense_count' not in cat:
+                cat['expense_count'] = 0
         
         return jsonify({
             'status': 'success',
@@ -206,6 +228,8 @@ def create_category():
             'title': data['title'],
             'description': data['description'],
             'user_id': user_id,
+            'total_amount': 0.0,  # Global amount for this category
+            'expense_count': 0,   # Number of expenses in this category
             'created_at': datetime.utcnow(),
             'updated_at': datetime.utcnow()
         }
@@ -245,6 +269,8 @@ def get_expenses():
             query['category_id'] = category_id
         
         filter_type = request.args.get('filter')
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
         now = datetime.utcnow()
         
         if filter_type == 'past_week':
@@ -259,6 +285,13 @@ def get_expenses():
             }
         elif filter_type == 'last_3_months':
             query['expense_date'] = {'$gte': now - timedelta(days=90)}
+        elif filter_type == 'custom' and start_date and end_date:
+            try:
+                start_dt = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+                end_dt = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+                query['expense_date'] = {'$gte': start_dt, '$lte': end_dt}
+            except ValueError:
+                return jsonify({'status': 'error', 'message': 'Invalid date format for custom filter'}), 400
         
         expenses_cursor = mongo.db.expenses.find(query).sort('expense_date', -1)
         expenses = list(expenses_cursor)
@@ -319,6 +352,18 @@ def create_expense():
         result = mongo.db.expenses.insert_one(expense_doc)
         expense_id = str(result.inserted_id)
         
+        # Update category total amount and count
+        mongo.db.categories.update_one(
+            {'_id': ObjectId(category_id), 'user_id': user_id},
+            {
+                '$inc': {
+                    'total_amount': amount,
+                    'expense_count': 1
+                },
+                '$set': {'updated_at': datetime.utcnow()}
+            }
+        )
+        
         expense = {
             'id': expense_id,
             'amount': amount,
@@ -338,6 +383,321 @@ def create_expense():
     except Exception as e:
         return jsonify({'status': 'error', 'message': f'Expense creation failed: {str(e)}'}), 500
 
+@app.route('/api/expenses/<expense_id>', methods=['PUT'])
+@jwt_required()
+def update_expense(expense_id):
+    """Update an existing expense"""
+    try:
+        user_id = get_jwt_identity()
+        data = request.get_json()
+        
+        # Find existing expense
+        existing_expense = mongo.db.expenses.find_one({
+            '_id': ObjectId(expense_id),
+            'user_id': user_id
+        })
+        if not existing_expense:
+            return jsonify({'status': 'error', 'message': 'Expense not found'}), 404
+        
+        # Validate new data
+        required = ['amount', 'note', 'expense_date', 'category_id']
+        for field in required:
+            if field not in data:
+                return jsonify({'status': 'error', 'message': f'{field} is required'}), 400
+        
+        try:
+            new_amount = float(data['amount'])
+            if new_amount <= 0:
+                raise ValueError()
+        except (ValueError, TypeError):
+            return jsonify({'status': 'error', 'message': 'Amount must be positive number'}), 400
+        
+        # Validate category
+        new_category_id = data['category_id']
+        category = mongo.db.categories.find_one({
+            '_id': ObjectId(new_category_id),
+            'user_id': user_id
+        })
+        if not category:
+            return jsonify({'status': 'error', 'message': 'Invalid category'}), 400
+        
+        try:
+            expense_date = datetime.fromisoformat(data['expense_date'].replace('Z', '+00:00'))
+        except ValueError:
+            return jsonify({'status': 'error', 'message': 'Invalid date format'}), 400
+        
+        old_amount = existing_expense['amount']
+        old_category_id = existing_expense['category_id']
+        
+        # Update expense
+        update_doc = {
+            'amount': new_amount,
+            'note': data['note'],
+            'expense_date': expense_date,
+            'category_id': new_category_id,
+            'updated_at': datetime.utcnow()
+        }
+        
+        mongo.db.expenses.update_one(
+            {'_id': ObjectId(expense_id), 'user_id': user_id},
+            {'$set': update_doc}
+        )
+        
+        # Update old category (subtract old amount)
+        mongo.db.categories.update_one(
+            {'_id': ObjectId(old_category_id), 'user_id': user_id},
+            {
+                '$inc': {
+                    'total_amount': -old_amount,
+                    'expense_count': -1
+                },
+                '$set': {'updated_at': datetime.utcnow()}
+            }
+        )
+        
+        # Update new category (add new amount)
+        mongo.db.categories.update_one(
+            {'_id': ObjectId(new_category_id), 'user_id': user_id},
+            {
+                '$inc': {
+                    'total_amount': new_amount,
+                    'expense_count': 1
+                },
+                '$set': {'updated_at': datetime.utcnow()}
+            }
+        )
+        
+        expense = {
+            'id': expense_id,
+            'amount': new_amount,
+            'note': data['note'],
+            'expense_date': expense_date.isoformat(),
+            'category_id': new_category_id,
+            'user_id': user_id,
+            'updated_at': update_doc['updated_at'].isoformat()
+        }
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Expense updated successfully',
+            'data': {'expense': expense}
+        })
+        
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'Expense update failed: {str(e)}'}), 500
+
+@app.route('/api/expenses/<expense_id>', methods=['DELETE'])
+@jwt_required()
+def delete_expense(expense_id):
+    """Delete an existing expense"""
+    try:
+        user_id = get_jwt_identity()
+        
+        # Find existing expense
+        existing_expense = mongo.db.expenses.find_one({
+            '_id': ObjectId(expense_id),
+            'user_id': user_id
+        })
+        if not existing_expense:
+            return jsonify({'status': 'error', 'message': 'Expense not found'}), 404
+        
+        amount = existing_expense['amount']
+        category_id = existing_expense['category_id']
+        
+        # Delete expense
+        mongo.db.expenses.delete_one({
+            '_id': ObjectId(expense_id),
+            'user_id': user_id
+        })
+        
+        # Update category (subtract amount and count)
+        mongo.db.categories.update_one(
+            {'_id': ObjectId(category_id), 'user_id': user_id},
+            {
+                '$inc': {
+                    'total_amount': -amount,
+                    'expense_count': -1
+                },
+                '$set': {'updated_at': datetime.utcnow()}
+            }
+        )
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Expense deleted successfully',
+            'data': {
+                'deleted_expense_id': expense_id,
+                'amount_removed': amount
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'Expense deletion failed: {str(e)}'}), 500
+
+# INCOME ENDPOINTS
+
+@app.route('/api/income', methods=['POST'])
+@jwt_required()
+def set_monthly_income():
+    """Set monthly income for user"""
+    try:
+        user_id = get_jwt_identity()
+        data = request.get_json()
+        
+        if not data.get('amount'):
+            return jsonify({'status': 'error', 'message': 'Amount is required'}), 400
+        
+        try:
+            amount = float(data['amount'])
+            if amount <= 0:
+                raise ValueError()
+        except (ValueError, TypeError):
+            return jsonify({'status': 'error', 'message': 'Amount must be positive number'}), 400
+        
+        # Update or create income record
+        income_doc = {
+            'user_id': user_id,
+            'amount': amount,
+            'month': datetime.utcnow().strftime('%Y-%m'),
+            'updated_at': datetime.utcnow()
+        }
+        
+        # Upsert income record
+        mongo.db.income.update_one(
+            {'user_id': user_id, 'month': income_doc['month']},
+            {'$set': income_doc},
+            upsert=True
+        )
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Monthly income set successfully',
+            'data': {
+                'income': {
+                    'amount': amount,
+                    'month': income_doc['month']
+                }
+            }
+        }), 201
+        
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'Failed to set income: {str(e)}'}), 500
+
+@app.route('/api/income', methods=['GET'])
+@jwt_required()
+def get_monthly_income():
+    """Get current month's income"""
+    try:
+        user_id = get_jwt_identity()
+        current_month = datetime.utcnow().strftime('%Y-%m')
+        
+        income = mongo.db.income.find_one({
+            'user_id': user_id,
+            'month': current_month
+        })
+        
+        if not income:
+            return jsonify({
+                'status': 'success',
+                'data': {
+                    'income': {
+                        'amount': 0,
+                        'month': current_month,
+                        'message': 'No income set for this month'
+                    }
+                }
+            })
+        
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'income': {
+                    'amount': income['amount'],
+                    'month': income['month']
+                }
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'Failed to get income: {str(e)}'}), 500
+
+# SAVINGS CALCULATION ENDPOINT
+
+@app.route('/api/savings', methods=['GET'])
+@jwt_required()
+def calculate_savings():
+    """Calculate savings based on income and expenses"""
+    try:
+        user_id = get_jwt_identity()
+        current_month = datetime.utcnow().strftime('%Y-%m')
+        
+        # Get monthly income
+        income_record = mongo.db.income.find_one({
+            'user_id': user_id,
+            'month': current_month
+        })
+        
+        monthly_income = income_record['amount'] if income_record else 0
+        
+        # Get current month expenses
+        first_day_current = datetime.utcnow().replace(day=1)
+        last_day_current = (first_day_current + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+        
+        expenses = list(mongo.db.expenses.find({
+            'user_id': user_id,
+            'expense_date': {
+                '$gte': first_day_current,
+                '$lte': last_day_current
+            }
+        }))
+        
+        # Calculate total expenses
+        total_expenses = sum(exp['amount'] for exp in expenses)
+        
+        # Calculate savings
+        savings = monthly_income - total_expenses
+        
+        # Get all user categories with their global amounts
+        user_categories = list(mongo.db.categories.find({'user_id': user_id}))
+        category_breakdown = {}
+        
+        for category in user_categories:
+            cat_id = str(category['_id'])
+            category_breakdown[cat_id] = {
+                'category_name': category['title'],
+                'total_amount': category.get('total_amount', 0.0),
+                'expense_count': category.get('expense_count', 0),
+                'monthly_amount': 0.0,  # Amount spent this month
+                'monthly_count': 0      # Expenses this month
+            }
+        
+        # Calculate monthly expenses by category
+        for expense in expenses:
+            cat_id = expense['category_id']
+            if cat_id in category_breakdown:
+                category_breakdown[cat_id]['monthly_amount'] += expense['amount']
+                category_breakdown[cat_id]['monthly_count'] += 1
+        
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'monthly_summary': {
+                    'month': current_month,
+                    'income': monthly_income,
+                    'total_expenses': total_expenses,
+                    'savings': savings,
+                    'savings_percentage': round((savings / monthly_income * 100) if monthly_income > 0 else 0, 2)
+                },
+                'expense_breakdown': {
+                    'total_count': len(expenses),
+                    'categories': category_breakdown
+                }
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'Failed to calculate savings: {str(e)}'}), 500
+
 # ERROR HANDLERS
 @app.errorhandler(404)
 def not_found(error):
@@ -353,7 +713,7 @@ def internal_error(error):
 
 if __name__ == '__main__':
     print("=" * 80)
-    print("SIMPLE WORKING API - FIXED JWT ISSUES")
+    print("ENHANCED EXPENSE TRACKER API - WITH INCOME & SAVINGS")
     print("=" * 80)
     print("ALL REQUIREMENTS IMPLEMENTED:")
     print("   - User Authentication with JWT")
@@ -364,6 +724,14 @@ if __name__ == '__main__':
     print("   - JWT Protection on ALL endpoints")
     print("   - Predefined Categories:", ", ".join(EXPENSE_CATEGORIES))
     print("   - MONGODB DATA PERSISTENCE")
+    print()
+    print("NEW FEATURES ADDED:")
+    print("   - Monthly Income Tracking")
+    print("   - Savings Calculation")
+    print("   - Global Category Amount Tracking")
+    print("   - Complete Expense CRUD (Update & Delete)")
+    print("   - Advanced Filtering (Custom Date Ranges)")
+    print("   - Accurate Balance Detection")
     print()
     print("SERVER STARTING ON: http://127.0.0.1:5000")
     print("=" * 80)
