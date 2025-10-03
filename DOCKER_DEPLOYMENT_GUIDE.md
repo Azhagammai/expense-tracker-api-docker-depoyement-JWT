@@ -3,6 +3,38 @@
 
 This guide shows you how to deploy your Expense Tracker API using Docker and Docker Compose.
 
+
+## 🚀 DEPLOYMENT COMMANDS
+
+### Development Commands
+
+```bash
+# Start all services
+docker-compose up
+
+# Start in background
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+
+# Rebuild and start
+docker-compose up --build
+
+# Build Image
+docker build -t expense-tracker-api .
+
+# Run Continer
+docker run -d -p 5000:5000 expense-tracker-api
+
+
+# Access API Docker Deploy
+ http://localhost:5000
+
+
 ## 📋 PREREQUISITES
 
 - Docker installed on your system
@@ -86,28 +118,7 @@ The MongoDB container is configured with:
 - **Port:** 27017
 - **Persistence:** Data stored in Docker volume
 
-## 🚀 DEPLOYMENT COMMANDS
 
-### Development Commands
-
-```bash
-# Start all services
-docker-compose up
-
-# Start in background
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
-
-# Rebuild and start
-docker-compose up --build
-
-# Remove everything (including volumes)
-docker-compose down -v
 ```
 
 ### Production Commands
