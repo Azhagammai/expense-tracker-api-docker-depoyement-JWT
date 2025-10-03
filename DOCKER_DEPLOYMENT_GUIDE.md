@@ -295,61 +295,6 @@ docker-compose exec api ping mongodb
 docker-compose exec api curl http://localhost:5000/health
 ```
 
-## 🌐 PRODUCTION DEPLOYMENT
-
-### Cloud Deployment Options
-
-#### 1. AWS ECS
-```bash
-# Build and push to ECR
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <account>.dkr.ecr.us-east-1.amazonaws.com
-docker build -t expense-tracker-api .
-docker tag expense-tracker-api:latest <account>.dkr.ecr.us-east-1.amazonaws.com/expense-tracker-api:latest
-docker push <account>.dkr.ecr.us-east-1.amazonaws.com/expense-tracker-api:latest
-```
-
-#### 2. Google Cloud Run
-```bash
-# Build and deploy
-gcloud builds submit --tag gcr.io/PROJECT-ID/expense-tracker-api
-gcloud run deploy --image gcr.io/PROJECT-ID/expense-tracker-api --platform managed
-```
-
-#### 3. Azure Container Instances
-```bash
-# Build and push to ACR
-az acr build --registry myregistry --image expense-tracker-api .
-az container create --resource-group myResourceGroup --name expense-tracker --image myregistry.azurecr.io/expense-tracker-api
-```
-
-### Kubernetes Deployment
-
-```yaml
-# k8s-deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: expense-tracker-api
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: expense-tracker-api
-  template:
-    metadata:
-      labels:
-        app: expense-tracker-api
-    spec:
-      containers:
-      - name: api
-        image: expense-tracker-api:latest
-        ports:
-        - containerPort: 5000
-        env:
-        - name: MONGO_URI
-          value: "mongodb://mongodb:27017/expense_tracker"
-```
-
 ## 📝 POSTMAN TESTING WITH DOCKER
 
 ### Test Local Docker Deployment
