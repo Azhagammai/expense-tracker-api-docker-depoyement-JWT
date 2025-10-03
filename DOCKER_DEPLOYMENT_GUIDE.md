@@ -33,7 +33,7 @@ docker run -d -p 5000:5000 expense-tracker-api
 
 # Access API Docker Deploy
  http://localhost:5000
-
+```
 
 ## 📋 PREREQUISITES
 
